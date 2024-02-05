@@ -1,0 +1,16 @@
+name: 23andme
+channel_priority: strict
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies: 
+  - pip=23.1.2
+  - python=3.9
+  - pandas=2.0.1
+  - numpy=1.24.3
+  - matplotlib=
+  - biopython=1.81
+  - snakemake-minimal=7.32.3
+  - graphviz=8.0.5
+  - plink=1.9

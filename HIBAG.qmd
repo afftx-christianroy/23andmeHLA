@@ -1,0 +1,95 @@
+
+```{r}
+#BiocManager::install('HIBAG', type = 'source')
+library(HIBAG)
+```
+
+
+```{r}
+args <- commandArgs(TRUE)
+ethnicity=args[1]
+print(ethnicity)
+ethnicity <- 'European'
+if(ethnicity == 'European') trained.Rdata = "models/European-HLA4-hg19.RData"
+if(ethnicity == 'Asian') trained.Rdata = "models/Asian-HLA4-hg19.RData"
+if(ethnicity == 'Hispanic') trained.Rdata = "models/Hispanic-HLA4-hg19.RData"
+if(ethnicity == 'African') trained.Rdata = "models/African-HLA4-hg19.RData"
+```
+
+
+```{r}
+# Load the published parameter estimates from European ancestry
+load(trained.Rdata)
+A.model <- hlaModelFromObj(HLA4[['A']])
+B.model <- hlaModelFromObj(HLA4[['B']])
+C.model <- hlaModelFromObj(HLA4[['C']])
+rm('HLA4')
+```
+
+```{r}
+# Import your PLINK BED file
+yourgeno <- hlaBED2Geno(bed.fn="plink.bed", fam.fn="plink.fam", bim.fn="plink.bim")
+summary(yourgeno)
+
+# HLA imputation at HLA-A
+
+A.guess <- predict(A.model, yourgeno, type="response+prob",match.type='Position')
+A.guess$value
+
+B.guess <- predict(B.model, yourgeno, type="response+prob",match.type='Position')
+
+
+C.guess <- predict(C.model, yourgeno, type="response+prob",match.type='Position')
+
+
+write.csv(
+  data.frame(
+    A_allele1 = A.guess$value$allele1,
+    A_allele2 = A.guess$value$allele2,
+    A_prob = A.guess$value$prob,
+    B_allele1 = B.guess$value$allele1,
+    B_allele2 = B.guess$value$allele2,
+    B_prob = B.guess$value$prob,
+    C_allele1 = C.guess$value$allele1,
+    C_allele2 = C.guess$value$allele2,
+    C_prob = C.guess$value$prob
+  ),
+  file = 'HIBAG_output.csv',
+  row.names = FALSE
+)
+```
+
+https://bioconductor.org/packages/release/bioc/vignettes/HIBAG/inst/doc/HIBAG.html#pre-fit-hibag-models-for-hla-imputation
+
+
+```{r}
+# load the published parameter estimates from European ancestry
+#   e.g., filename <- "HumanOmniExpressExome-European-HLA4-hg19.RData"
+#   here, we use example data in the package
+filename <- system.file("extdata", "ModelList.RData", package="HIBAG")
+model.list <- get(load(filename))
+
+# HLA imputation at HLA-A
+hla.id <- "A"
+model <- hlaModelFromObj(model.list[[hla.id]])
+summary(model)
+
+A.guess <- predict(A.model, yourgeno, type="response+prob",match.type='Position')
+A.guess$value
+```
+
+[Link to quote below](https://github.com/zhengxwen/HIBAG/blob/dabd9f9f445c0e9bbb9c62f8431c481b5a16197b/vignettes/HIBAG.Rmd#L253)
+
+> Matching proportion is a measure or proportion describing how the SNP profile matches the SNP haplotypes observed in the training set, i.e., the likelihood of SNP profile in a random-mating population consisting of training haplotypes. It is not directly related to confidence score, *but a very low value of matching indicates that it is underrepresented in the training set.*
+
+
+
+```{r}
+plot(model) 
+plot(A.model) 
+```
+
+```{r}
+hlaReportPlot(PredHLA = A.guess, model=A.model, fig="matching")
+```
+
